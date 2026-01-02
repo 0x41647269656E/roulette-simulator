@@ -1,0 +1,90 @@
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+button {
+  cursor: pointer;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.card {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.grid {
+  display: grid;
+  gap: 16px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: #1f2937;
+}
+
+.table-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.table-cell {
+  background: #1e293b;
+  border-radius: 6px;
+  padding: 8px;
+  text-align: center;
+}
+
+.table-cell.red {
+  background: #7f1d1d;
+}
+
+.table-cell.black {
+  background: #0f172a;
+}
+
+.table-cell.green {
+  background: #14532d;
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+input, select {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.nav {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.nav button {
+  background: transparent;
+  color: #93c5fd;
+  border: none;
+}

@@ -62,6 +62,15 @@ export default function Game() {
       }
     };
 
+    const refreshHistory = async () => {
+      try {
+        const historyData = await apiFetch("/history?limit=20");
+        setHistory(historyData);
+      } catch (error) {
+        console.error("Failed to refresh history", error);
+      }
+    };
+
     const handleSnapshot = (payload) => {
       setBalance(payload.balance);
       setPhase(payload.state?.phase);
@@ -84,6 +93,7 @@ export default function Game() {
 
     const handleResult = (payload) => {
       setLastRoundBets(payload.myBetsSettled || []);
+      refreshHistory();
     };
 
     const handleError = (payload) => {

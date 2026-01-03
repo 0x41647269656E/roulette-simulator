@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "../api/client.js";
 import { createSocket } from "../ws/socket.js";
 import RoundStatus from "../components/RoundStatus.jsx";
@@ -14,6 +14,7 @@ export default function Game() {
   const [history, setHistory] = useState([]);
   const [lastRoundBets, setLastRoundBets] = useState([]);
   const [socketError, setSocketError] = useState("");
+  const isRefreshingPhase = useRef(false);
 
   const socket = useMemo(() => createSocket(), []);
 
@@ -31,6 +32,28 @@ export default function Game() {
     }
     bootstrap();
   }, []);
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      if (!phaseEndsAt) return;
+      const endsAt = new Date(phaseEndsAt).getTime();
+      if (Number.isNaN(endsAt) || Date.now() < endsAt) {
+        return;
+      }
+      if (isRefreshingPhase.current) return;
+      isRefreshingPhase.current = true;
+      try {
+        const state = await apiFetch("/state");
+        setPhase(state.phase);
+        setPhaseEndsAt(state.phaseEndsAt);
+      } catch (err) {
+        console.error("Failed to refresh phase state", err);
+      } finally {
+        isRefreshingPhase.current = false;
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [phaseEndsAt]);
 
   useEffect(() => {
     socket.on("connect", () => {
@@ -75,19 +98,17 @@ export default function Game() {
 
   return (
     <div className="grid">
-      <div className="card">
-        <h2>Table de roulette</h2>
-        {table && (
-          <p>
-            Table: {table.tableId} | Session: {table.playerSessionUuid}
-          </p>
-        )}
-        <p>Solde: {balance}</p>
-        {socketError && <p style={{ color: "#f87171" }}>{socketError}</p>}
-      </div>
-
       <div className="grid" style={{ gridTemplateColumns: "2fr 1fr" }}>
-        <TableLayout />
+        <div className="card">
+          <h2>Table de roulette</h2>
+          {table && (
+            <p>
+              Table: {table.tableId} | Session: {table.playerSessionUuid}
+            </p>
+          )}
+          <p>Solde: {balance}</p>
+          {socketError && <p style={{ color: "#f87171" }}>{socketError}</p>}
+        </div>
         <RoundStatus phase={phase} phaseEndsAt={phaseEndsAt} />
       </div>
 
@@ -110,6 +131,11 @@ export default function Game() {
       </div>
 
       <History items={history} />
+
+      <div className="card">
+        <h3>Table (visuel)</h3>
+        <TableLayout />
+      </div>
     </div>
   );
 }

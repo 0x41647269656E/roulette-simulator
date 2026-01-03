@@ -179,17 +179,22 @@ function scheduleNext(table, io, nextPhase, delay) {
   if (!engine) return;
   if (engine.timeout) clearTimeout(engine.timeout);
   engine.timeout = setTimeout(() => {
+    engine.timeout = null;
     transition(table, io, nextPhase).catch((error) => {
       // eslint-disable-next-line no-console
       console.error("Engine transition error", error);
+      scheduleNext(table, io, "BETTING_OPEN", 1000);
     });
   }, delay);
 }
 
 export async function startTableEngine(table, io) {
   const tableId = String(table._id);
-  if (engines.has(tableId)) return;
-  engines.set(tableId, { timeout: null });
+  const engine = engines.get(tableId);
+  if (engine?.timeout) return;
+  if (!engine) {
+    engines.set(tableId, { timeout: null });
+  }
   await transition(table, io, "BETTING_OPEN");
 }
 

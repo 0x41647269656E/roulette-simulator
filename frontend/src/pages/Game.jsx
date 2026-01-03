@@ -56,37 +56,67 @@ export default function Game() {
   }, [phaseEndsAt]);
 
   useEffect(() => {
-    socket.on("connect", () => {
+    const handleConnect = () => {
       if (table?.tableId) {
         socket.emit("client:joinTable", { tableId: table.tableId });
       }
-    });
-    socket.on("server:snapshot", (payload) => {
+    };
+
+    const handleSnapshot = (payload) => {
       setBalance(payload.balance);
       setPhase(payload.state?.phase);
       setPhaseEndsAt(payload.state?.phaseEndsAt);
       setHistory(payload.history20 || []);
-    });
-    socket.on("server:phase", (payload) => {
+    };
+
+    const handlePhase = (payload) => {
       setPhase(payload.phase);
       setPhaseEndsAt(payload.phaseEndsAt);
-    });
-    socket.on("server:history", (payload) => {
+    };
+
+    const handleHistory = (payload) => {
       setHistory(payload.last20 || []);
-    });
-    socket.on("server:balance", (payload) => {
+    };
+
+    const handleBalance = (payload) => {
       setBalance(payload.balance);
-    });
-    socket.on("server:result", (payload) => {
+    };
+
+    const handleResult = (payload) => {
       setLastRoundBets(payload.myBetsSettled || []);
-    });
-    socket.on("server:error", (payload) => {
+    };
+
+    const handleError = (payload) => {
       setSocketError(payload.message);
-    });
+    };
+
+    socket.on("connect", handleConnect);
+    socket.on("server:snapshot", handleSnapshot);
+    socket.on("server:phase", handlePhase);
+    socket.on("server:history", handleHistory);
+    socket.on("server:balance", handleBalance);
+    socket.on("server:result", handleResult);
+    socket.on("server:error", handleError);
 
     return () => {
+      socket.off("connect", handleConnect);
+      socket.off("server:snapshot", handleSnapshot);
+      socket.off("server:phase", handlePhase);
+      socket.off("server:history", handleHistory);
+      socket.off("server:balance", handleBalance);
+      socket.off("server:result", handleResult);
+      socket.off("server:error", handleError);
       socket.disconnect();
     };
+  }, [socket, table?.tableId]);
+
+  useEffect(() => {
+    if (!table?.tableId) return;
+    if (socket.connected) {
+      socket.emit("client:joinTable", { tableId: table.tableId });
+      return;
+    }
+    socket.connect();
   }, [socket, table?.tableId]);
 
   const handlePlaceBet = async ({ betType, selection, amount }) => {

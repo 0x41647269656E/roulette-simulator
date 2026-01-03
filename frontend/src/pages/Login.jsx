@@ -3,7 +3,6 @@ import { apiFetch, setToken } from "../api/client.js";
 
 export default function Login({ onLogin }) {
   const [login, setLogin] = useState("");
-  const [friendlyName, setFriendlyName] = useState("");
   const [error, setError] = useState("");
 
   const handleSubmit = async (event) => {
@@ -12,7 +11,7 @@ export default function Login({ onLogin }) {
     try {
       const data = await apiFetch("/auth/login", {
         method: "POST",
-        body: JSON.stringify({ login, friendlyName })
+        body: JSON.stringify({ login })
       });
       setToken(data.token);
       onLogin(data.token);
@@ -29,10 +28,6 @@ export default function Login({ onLogin }) {
           <div className="form-row">
             <label>Login</label>
             <input value={login} onChange={(e) => setLogin(e.target.value)} required />
-          </div>
-          <div className="form-row">
-            <label>Friendly name (optionnel)</label>
-            <input value={friendlyName} onChange={(e) => setFriendlyName(e.target.value)} />
           </div>
           {error && <p style={{ color: "#f87171" }}>{error}</p>}
           <button type="submit">Se connecter</button>

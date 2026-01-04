@@ -83,8 +83,8 @@ export default function Game() {
       setPhaseEndsAt(payload.phaseEndsAt);
     };
 
-    const handleHistory = (payload) => {
-      setHistory(payload.last20 || []);
+    const handleHistory = () => {
+      refreshHistory();
     };
 
     const handleBalance = (payload) => {

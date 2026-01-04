@@ -63,7 +63,8 @@ router.post("/placeBet", async (req, res) => {
       userId: req.user._id,
       betType,
       selection,
-      amount
+      amount,
+      io: req.app.get("io")
     });
 
     req.app.get("io").to(`table:${table._id}`).emit("server:bet:accepted", {

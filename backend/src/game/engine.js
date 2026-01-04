@@ -77,8 +77,6 @@ async function activateBets(io, round) {
   const pendingBets = round.bets.filter((bet) => bet.status === "PENDING");
   for (const bet of pendingBets) {
     bet.status = "ACTIVE";
-    await User.updateOne({ _id: bet.userId }, { $inc: { balance: -bet.amount } });
-    await emitBalance(io, bet.userId);
     io.to(getRoom(round.tableId)).emit("server:bet:activated", { betId: bet.betId });
   }
   await round.save();
@@ -179,17 +177,22 @@ function scheduleNext(table, io, nextPhase, delay) {
   if (!engine) return;
   if (engine.timeout) clearTimeout(engine.timeout);
   engine.timeout = setTimeout(() => {
+    engine.timeout = null;
     transition(table, io, nextPhase).catch((error) => {
       // eslint-disable-next-line no-console
       console.error("Engine transition error", error);
+      scheduleNext(table, io, "BETTING_OPEN", 1000);
     });
   }, delay);
 }
 
 export async function startTableEngine(table, io) {
   const tableId = String(table._id);
-  if (engines.has(tableId)) return;
-  engines.set(tableId, { timeout: null });
+  const engine = engines.get(tableId);
+  if (engine?.timeout) return;
+  if (!engine) {
+    engines.set(tableId, { timeout: null });
+  }
   await transition(table, io, "BETTING_OPEN");
 }
 
@@ -199,10 +202,22 @@ export async function restoreEngines(tables, io) {
   }
 }
 
-export async function placeBetOnTable({ tableId, userId, betType, selection, amount }) {
+export async function placeBetOnTable({ tableId, userId, betType, selection, amount, io }) {
   const round = await Round.findOne({ tableId }).sort({ roundIndex: -1 });
   if (!round || round.phase !== "BETTING_OPEN") {
     throw new Error("Betting is closed.");
+  }
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new Error("User not found.");
+  }
+  if (user.balance < amount) {
+    throw new Error("Insufficient balance.");
+  }
+  user.balance -= amount;
+  await user.save();
+  if (io) {
+    await emitBalance(io, userId);
   }
   const bet = {
     betId: uuidv4(),

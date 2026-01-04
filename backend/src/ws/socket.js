@@ -78,7 +78,8 @@ export function initSocket(io) {
           userId: socket.data.userId,
           betType,
           selection,
-          amount
+          amount,
+          io
         });
         io.to(getRoom(tableForUser._id)).emit("server:bet:accepted", {
           betId: bet.betId,

@@ -6,9 +6,14 @@ import { deriveResult, evaluateBet } from "./roulette.js";
 import { calculatePayout } from "./payouts.js";
 
 const engines = new Map();
+const WS_NAMESPACE = "/ws";
 
 function getRoom(tableId) {
   return `table:${tableId}`;
+}
+
+function getNamespace(io) {
+  return io.of(WS_NAMESPACE);
 }
 
 async function emitSnapshot(io, tableId) {
@@ -17,7 +22,7 @@ async function emitSnapshot(io, tableId) {
     .sort({ createdAt: -1 })
     .limit(20);
 
-  const sockets = await io.in(getRoom(tableId)).fetchSockets();
+  const sockets = await getNamespace(io).in(getRoom(tableId)).fetchSockets();
   for (const socket of sockets) {
     const userId = socket.data.userId;
     const user = await User.findById(userId);
@@ -36,7 +41,7 @@ async function emitSnapshot(io, tableId) {
 }
 
 async function emitPhase(io, tableId, round) {
-  io.to(getRoom(tableId)).emit("server:phase", {
+  getNamespace(io).to(getRoom(tableId)).emit("server:phase", {
     phase: round.phase,
     phaseEndsAt: round.timestamps?.phaseEndsAt,
     roundIndex: round.roundIndex
@@ -47,11 +52,11 @@ async function emitHistory(io, tableId) {
   const history = await Round.find({ tableId, "result.number": { $ne: null } })
     .sort({ createdAt: -1 })
     .limit(20);
-  io.to(getRoom(tableId)).emit("server:history", { last20: history });
+  getNamespace(io).to(getRoom(tableId)).emit("server:history", { last20: history });
 }
 
 async function emitResult(io, tableId, round, settledByUser) {
-  const sockets = await io.in(getRoom(tableId)).fetchSockets();
+  const sockets = await getNamespace(io).in(getRoom(tableId)).fetchSockets();
   for (const socket of sockets) {
     const userId = socket.data.userId;
     const settled = settledByUser.get(String(userId)) || [];
@@ -64,7 +69,7 @@ async function emitResult(io, tableId, round, settledByUser) {
 }
 
 async function emitBalance(io, userId) {
-  const sockets = await io.fetchSockets();
+  const sockets = await getNamespace(io).fetchSockets();
   for (const socket of sockets) {
     if (String(socket.data.userId) === String(userId)) {
       const user = await User.findById(userId);
@@ -77,7 +82,7 @@ async function activateBets(io, round) {
   const pendingBets = round.bets.filter((bet) => bet.status === "PENDING");
   for (const bet of pendingBets) {
     bet.status = "ACTIVE";
-    io.to(getRoom(round.tableId)).emit("server:bet:activated", { betId: bet.betId });
+    getNamespace(io).to(getRoom(round.tableId)).emit("server:bet:activated", { betId: bet.betId });
   }
   await round.save();
 }

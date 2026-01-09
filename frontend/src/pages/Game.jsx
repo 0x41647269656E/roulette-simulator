@@ -71,6 +71,15 @@ export default function Game() {
       }
     };
 
+    const refreshBalance = async () => {
+      try {
+        const balanceData = await apiFetch("/balance");
+        setBalance(balanceData.balance);
+      } catch (error) {
+        console.error("Failed to refresh balance", error);
+      }
+    };
+
     const handleSnapshot = (payload) => {
       setBalance(payload.balance);
       setPhase(payload.state?.phase);
@@ -94,6 +103,7 @@ export default function Game() {
     const handleResult = (payload) => {
       setLastRoundBets(payload.myBetsSettled || []);
       refreshHistory();
+      refreshBalance();
     };
 
     const handleError = (payload) => {
